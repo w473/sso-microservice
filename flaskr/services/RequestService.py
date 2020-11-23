@@ -28,21 +28,13 @@ def validate(kind, operation='default', root=None ):
             validator = Draft7Validator(schema)
             errors = {}
             for error in validator.iter_errors(request.json):
-                errors[''.join(error.path)] = error.message
+                errors['.'.join(error.path)] = error.message
             if len(errors) > 0:
                 raise JSONSchemaValidatorFailException(errors)
             
             return f(*args, **kwargs)
         return wrapper
     return decorator
-
-# def printDeque(queue:deque) -> str:
-#     ret = '';
-#     for elem in queue:
-#         ret
-#         print(elem.upper())
-
-
 
 class JSONSchemaValidatorException( Exception ):
     pass

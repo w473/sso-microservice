@@ -17,7 +17,10 @@ def login(username, password):
     user = repo.findByUsername(username)
     
     if user == None or sha256_crypt.verify(password, user.password) == False:
-        return {'status' : 'fail', 'message': 'user nie ma albo haslo zle'}, 403
+        return {'message': 'Login failed'}, 403
+
+    if user.isActive() == False:
+        return {'message': 'Please activate your account'}, 403
 
     refreshToken = RefreshToken(user.id, str(uuid.uuid4()))
     (RefreshTokenRepository(getDb())).save(refreshToken)

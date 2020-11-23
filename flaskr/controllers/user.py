@@ -1,13 +1,12 @@
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, url_for
 from pymongo.errors import DuplicateKeyError
 from datetime import datetime
 from passlib.hash import sha256_crypt
-from ..domain.documents.User import User
-from ..domain.repositories.UserRepository import UserRepository 
-from ..domain.mongo import getDb
-from ..formatters.UserFormatter import forApiAsDict
-from flaskr.services.AuthService import is_logged
-from flaskr.services.RequestService import validate
+from flaskr.domain.documents.User import User
+from flaskr.domain.repositories.UserRepository import UserRepository 
+from flaskr.domain.mongo import getDb, DbClient
+from flaskr.formatters.UserFormatter import forApiAsDict
+from flaskr.services import AuthService, RequestService, EmailService
 
 import logging
 logger = logging.getLogger( __name__ )
@@ -15,30 +14,53 @@ logger = logging.getLogger( __name__ )
 app = Blueprint('user', __name__, url_prefix='/user')
 
 @app.route("", methods=['POST'])
-@validate(kind='user')
+@RequestService.validate(kind='user_create')
 def create():
     content = request.get_json(silent=True)
-    logger.error(content)
     if content == None:
-        return {'status' : 'fail', 'message': 'dupa'}, 400
+        return {'message': 'Invalid Request'}, 400
 
     user = User(content)
     try:
         user.setCreate(datetime.utcnow())
-        user.setEnabled(False)
+        user.setActive(False)
         password = sha256_crypt.encrypt(content.get('password'))
         user.setPassword(password)
         repo = UserRepository(getDb())
+
+        emailService = EmailService.getEmailService()
+        activationUrl = current_app.config['BASE_URL'] + url_for(
+            'user.activate', 
+            username=user.username, 
+            code=user.activationCode
+        )
+
+        contents = emailService.prepareContents(
+            'activation', 
+            user.locale, 
+            name=user.name,
+            url=activationUrl
+        )
+        emailService.sendEmail(user.name, user.email, contents)    
+        
         repo.add(user)
-    except DuplicateKeyError:
-        return {'status' : 'fail', 'message': 'User already exists! - this error should not be here'}, 400
+
+    except DuplicateKeyError as e:
+        keyColumn = list(e.details.get('keyPattern').keys())[0]
+        if keyColumn == 'username':
+            return {'message': 'Please choose different username'}, 400
+        elif keyColumn == 'email':
+            return {'message': 'You cannot use this email address'}, 400
+        else:
+            raise Exception('Unknown column key raised error : "'+keyColumn+'"')
+        return {'message': 'User already exists! - this error should not be here'}, 400
 
     return '', 204
 
 @app.route("", methods=['PATCH'], defaults={'username': None})
 @app.route("/<username>", methods=['PATCH'])
-@validate(kind='user')
-@is_logged
+@RequestService.validate(kind='user_update')
+@AuthService.is_logged
 def update(user: User, username: str):
     repo = UserRepository(getDb())
     if username == None:
@@ -46,20 +68,38 @@ def update(user: User, username: str):
     elif user.hasRole('admin') and username != None:
         user = repo.findByUsername(username)
         if user == None:
-            return {'status' : 'fail', 'message': 'User not found'}, 400
+            return {'message': 'User not found'}, 400
     else:
-        return {'status' : 'fail', 'message': 'Forbidden'}, 403
+        return {'message': 'Forbidden'}, 403
 
     content = request.get_json(silent=True)
     if content == None:
-        return {'status' : 'fail', 'message': 'Validation failed'}, 400
-    #validacja!!
-    user = User(content)
-    repo = UserRepository(getDb())
-    repo.update(user)
+        return {'message': 'Validation failed'}, 400
 
+    try:
+        if content.get('password'):
+            content['password'] = sha256_crypt.encrypt(content.get('password'))
+        repo = UserRepository(getDb())
+        newUser = User(content)
+        hasNewEmail = False
+        if content.get('email') and user.email != content.get('email'):
+            newUser.setActive(False)
+            hasNewEmail = True
+        repo.update(newUser)
+        if hasNewEmail:
+            return {'message': 'Please activate your email'}, 200
+        else:
+            return '', 204
+    except DuplicateKeyError as e:
+        keyColumn = list(e.details.get('keyPattern').keys())[0]
+        if keyColumn == 'username':
+            return {'message': 'Please choose different username'}, 400
+        elif keyColumn == 'email':
+            return {'message': 'You cannot use this email address'}, 400
+        else:
+            raise Exception('Unknown column key raised error : "'+keyColumn+'"')
+        return {'message': 'User already exists! - this error should not be here'}, 400
     return '', 204
-
 
 @app.route("/<username>/activate/<code>", methods=['PATCH'])
 def activate(username, code):
@@ -76,7 +116,7 @@ def activate(username, code):
 
     return '', 204
 
-@is_logged
+@AuthService.is_logged
 @app.route("", methods=['GET'], defaults={'username': None})
 @app.route("/<username>", methods=['GET'])
 def getUser(user: User, username: str):
@@ -90,7 +130,7 @@ def getUser(user: User, username: str):
     else:
         return {'status' : 'fail', 'message': 'Forbidden'}, 403
 
-@is_logged
+@AuthService.is_logged
 @app.route("/", methods=['DELETE'])
 @app.route("/<username>", methods=['DELETE'])
 def deleteUser(user: User, username: str):

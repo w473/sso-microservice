@@ -1,16 +1,15 @@
-class User:
-    username = None
-    email = None
-    name = None
-    locale = None
-    password = None
-    roles = None
-    create = None
-    activationCode = None
+import uuid
 
-    is_authenticated = False
-    is_active = False
-    is_anonymous = False
+class User:
+    # username = None
+    # email = None
+    # name = None
+    # locale = None
+    # password = None
+    # roles = None
+    # create = None
+    # activationCode = None
+
 
     def __init__(self, doc, id = None):
         self.id = id
@@ -21,7 +20,7 @@ class User:
         self.password = doc.get('password')
         self.roles = ['USER']
         self.create = doc.get('create')
-        self.is_active = doc.get('isActive')
+        self.isActive = doc.get('isActive')
         self.activationCode = doc.get('activation_code')
     
     def id(self) -> str:
@@ -43,8 +42,13 @@ class User:
         self.create = create
         self.id = id
 
-    def setEnabled(self, enabled) -> None:
-        self.isEnabled = enabled
+    def setActive(self, active) -> None:
+        if active == False and self.isActive!=active:
+            self.activationCode = str(uuid.uuid4())
+        self.isActive = active
+    
+    def isActive(self) -> bool:
+        return self.isActive
 
     def setPassword(self, password) -> None:
         self.password = password
@@ -57,7 +61,7 @@ class User:
             'locale': self.locale,
             'roles': self.roles,
             'create': self.create.strftime("%m/%d/%Y, %H:%M:%S"),
-            'is_active': self.is_active
+            'isActive': self.isActive
         }
 
     def toDict(self):

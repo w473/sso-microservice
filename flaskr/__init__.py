@@ -2,6 +2,11 @@ import os
 
 from flask import Flask
 from flaskr.services.RequestService import JSONSchemaValidatorFailException
+from flaskr.domain import mongo
+from flaskr.services import EmailService
+
+import logging
+logger = logging.getLogger( __name__ )
 
 def create_app(test_config=None):
     """Create and configure an instance of the Flask application."""
@@ -9,17 +14,37 @@ def create_app(test_config=None):
     app.config.from_mapping(
         # a default secret that should be overridden by instance config
         SECRET_KEY="dev",
-        VALIDATION_SCHEMAS_PATH="flaskr/validation_schemas"
+        VALIDATION_SCHEMAS_PATH="flaskr/resources/validation_schemas",
+        MAILING_TEMPLATES_PATH="flaskr/resources/email_templates"
         # store the database in the instance folder
         # DATABASE=os.path.join(app.instance_path, "flaskr.sqlite"),
     )
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
-        app.config.from_pyfile("config.py", silent=True)
+        app.config.from_json("config.json", silent=False)
     else:
         # load the test config if passed in
         app.config.update(test_config)
+
+    mongo.setDb(
+        app, 
+        app.config['MONGO_URL'], 
+        app.config['MONGO_USERNAME'], 
+        app.config['MONGO_PASSWORD'], 
+        app.config['MONGO_AUTH_SOURCE'], 
+        app.config['MONGO_DATABASE']
+    )
+
+    EmailService.setEmailService(
+        app, 
+        app.config['MAILING_SMTP_SERVER'], 
+        app.config['MAILING_SMTP_PORT'], 
+        app.config['MAILING_SENDER'], 
+        app.config['MAILING_SENDER_EMAIL'], 
+        app.config['MAILING_SMTP_PASSWORD'], 
+        app.config['MAILING_TEMPLATES_PATH']
+    )
 
     # ensure the instance folder exists
     try:
@@ -40,8 +65,7 @@ def create_app(test_config=None):
     app.register_blueprint(user.app)
     app.register_blueprint(key.app)
     app.register_blueprint(auth.app)
-    import logging
-    logger = logging.getLogger( __name__ )
+
 
     @app.errorhandler( JSONSchemaValidatorFailException )
     def onValidationError( e ):

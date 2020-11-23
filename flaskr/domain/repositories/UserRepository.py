@@ -3,11 +3,11 @@ from ..documents.User import User as UserDocument
 from bson.objectid import ObjectId
 
 class UserRepository(AbstractRepository):
-    def add(self, user: UserDocument):
+    def add(self, user: UserDocument, **kwargs):
         """
         docstring
         """
-        id = self.client.user.insert_one(user.toDict()).inserted_id
+        id = self.client.user.insert_one(user.toDict(), **kwargs).inserted_id
         user.setId(id)
 
     def update(self, user: UserDocument):
