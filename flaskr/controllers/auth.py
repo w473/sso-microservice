@@ -19,7 +19,7 @@ def login(username, password):
     if user == None or sha256_crypt.verify(password, user.password) == False:
         return {'message': 'Login failed'}, 403
 
-    if user.isActive() == False:
+    if user.isActive == False:
         return {'message': 'Please activate your account'}, 403
 
     refreshToken = RefreshToken(user.id, str(uuid.uuid4()))
@@ -34,7 +34,7 @@ def login(username, password):
     return encodeJwt(payload), 200
 
 @app.route("/logout", methods=['POST'])
-@is_logged
+@is_logged()
 def logout():
     # i teraz ogarnoc login przez Jwt
     # i automatyczne wydawanie nowego tokenu jak nie wazny

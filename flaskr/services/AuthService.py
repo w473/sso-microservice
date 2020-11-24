@@ -27,7 +27,6 @@ def parseToken(notAllowExpired: bool = True) -> dict:
 def authorize() -> User:
     try:
         token = parseToken()
-        logger.info(token)
         repo = UserRepository(getDb())
         username = token.get('username')
         user = repo.findByUsername(username)
@@ -52,15 +51,20 @@ def is_logged(role=None):
             try:
                 user = authorize()
                 if role != None:
+                    if user.isActive == False:
+                        return {'message': 'Not Allowed'}, 403
+
                     if user.hasRole(role):
-                        return func(user, *args, **kwargs)
+                        g.user = user
+                        return func(*args, **kwargs)
                     else:
                         return {'message': 'Not Allowed'}, 403
-                return func(user, *args, **kwargs)
+                g.user = user
+                return func(*args, **kwargs)
             except AuthorizationException as e:
-                return jsonify({'message': e.getMessage()})
+                return jsonify({'message': e.getMessage()}), 403
             except Exception as e:
-                # current_app.logger.error(e)
+                logger.error(e)
                 return jsonify({'message': 'Unexpected error occured'}) 
         return wrapper
     return decorator

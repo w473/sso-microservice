@@ -23,6 +23,9 @@ class RefreshTokenRepository(AbstractRepository):
 
     def delete(self, token: str) -> None:
         self.client.refreshToken.delete_one({"_id": token})
+    
+    def deleteForUser(self, user: User) -> None:
+        self.client.refreshToken.delete_many({"userId": ObjectId(user.id)})
 
     def findByUser(self, user: User) -> list:
         docs = self.client.refreshToken.find({"userId": ObjectId(user.id)})

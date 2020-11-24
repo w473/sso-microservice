@@ -1,9 +1,10 @@
-from flask import Blueprint, request, current_app, url_for
+from flask import Blueprint, request, current_app, url_for, g
 from pymongo.errors import DuplicateKeyError
 from datetime import datetime
 from passlib.hash import sha256_crypt
 from flaskr.domain.documents.User import User
 from flaskr.domain.repositories.UserRepository import UserRepository 
+from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenRepository 
 from flaskr.domain.mongo import getDb, DbClient
 from flaskr.formatters.UserFormatter import forApiAsDict
 from flaskr.services import AuthService, RequestService, EmailService
@@ -27,8 +28,10 @@ def create():
         password = sha256_crypt.encrypt(content.get('password'))
         user.setPassword(password)
         repo = UserRepository(getDb())
+        repo.add(user)
 
         emailService = EmailService.getEmailService()
+
         activationUrl = current_app.config['BASE_URL'] + url_for(
             'user.activate', 
             username=user.username, 
@@ -38,12 +41,12 @@ def create():
         contents = emailService.prepareContents(
             'activation', 
             user.locale, 
-            name=user.name,
+            username=user.username,
+            publicName=user.publicName,
             url=activationUrl
-        )
-        emailService.sendEmail(user.name, user.email, contents)    
-        
-        repo.add(user)
+        )   
+        #TODO offline!!   
+        emailService.sendEmail(user.publicName, user.email, contents)
 
     except DuplicateKeyError as e:
         keyColumn = list(e.details.get('keyPattern').keys())[0]
@@ -57,15 +60,15 @@ def create():
 
     return '', 204
 
-@app.route("", methods=['PATCH'], defaults={'username': None})
+@app.route("", methods=['PATCH'])
 @app.route("/<username>", methods=['PATCH'])
 @RequestService.validate(kind='user_update')
-@AuthService.is_logged
-def update(user: User, username: str):
+@AuthService.is_logged()
+def update(username: str = None):
     repo = UserRepository(getDb())
     if username == None:
-        pass
-    elif user.hasRole('admin') and username != None:
+        user = g.user
+    elif g.user.hasRole('admin') and username != None:
         user = repo.findByUsername(username)
         if user == None:
             return {'message': 'User not found'}, 400
@@ -79,12 +82,18 @@ def update(user: User, username: str):
     try:
         if content.get('password'):
             content['password'] = sha256_crypt.encrypt(content.get('password'))
+        
         repo = UserRepository(getDb())
         newUser = User(content)
+        newUser.create = user.create
+        newUser.roles = user.roles
+        newUser.id = user.id
         hasNewEmail = False
+
         if content.get('email') and user.email != content.get('email'):
             newUser.setActive(False)
             hasNewEmail = True
+
         repo.update(newUser)
         if hasNewEmail:
             return {'message': 'Please activate your email'}, 200
@@ -105,51 +114,52 @@ def update(user: User, username: str):
 def activate(username, code):
     repo = UserRepository(getDb())
     user = repo.findByUsername(username)
+    if user == None:
+        return {'message': 'Wrong username'}, 400
+
     if user.activationCode != code:
-        return {'status' : 'fail', 'message': 'zly kod aktywacyjny'}, 400
+        return {'message': 'Wrong activation code'}, 400
 
-    user.activationCode = None
-    user.isEnabled = True
+    user.setActive(True)
 
-    #wyslac email ze gitowo!
     repo.update(user)
 
     return '', 204
 
-@AuthService.is_logged
-@app.route("", methods=['GET'], defaults={'username': None})
-@app.route("/<username>", methods=['GET'])
-def getUser(user: User, username: str):
+@app.route("", methods=['GET'], endpoint='get')
+@app.route("/<username>", methods=['GET'], endpoint='get')
+@AuthService.is_logged()
+def getUser(username: str = None):
     if username == None:
-        return {'status' : 'ok', 'data': user.toDict()}, 200
-    elif user.hasRole('admin') and username != None:
+        return {'data': g.user.toDictResponse()}, 200
+    elif g.user.hasRole('ADMIN') and username != None:
         repo = UserRepository(getDb())
         user = repo.findByUsername(username)
         if user:
-            return {'status' : 'ok', 'data': user.toDict()}, 200
+            return {'data': user.toDictResponse()}, 200
+        else:
+            return {'message': 'User does not exists'}, 400
     else:
-        return {'status' : 'fail', 'message': 'Forbidden'}, 403
+        return {'message': 'Forbidden'}, 403
 
-@AuthService.is_logged
 @app.route("/", methods=['DELETE'])
 @app.route("/<username>", methods=['DELETE'])
-def deleteUser(user: User, username: str):
-    if username == None:
-        pass
-    elif user.hasRole('admin') and username != None:
-        repo = UserRepository(getDb())
-        user = repo.findByUsername(username)
-        if user:
-            return {'status' : 'ok', 'data': user.toDict()}, 200
-        else:
-            return {'status' : 'fail', 'message': 'User not found'}, 400
-    else:
-        return {'status' : 'fail', 'message': 'Forbidden'}, 403
-    
+@AuthService.is_logged()
+def deleteUser(username: str = None):
     repo = UserRepository(getDb())
+    if username == None:
+        user = g.user
+    elif g.user.hasRole('ADMIN') and username != None:
+        user = repo.findByUsername(username)
+        if user == None:
+            return { 'message': 'User not found'}, 400
+    else:
+        return {'message': 'Forbidden'}, 403
+    repoRT = RefreshTokenRepository(getDb())
     try:
-        repo.remove(user.id())
+        repo.delete(user.id)
+        repoRT.deleteForUser(user)
     except Exception as e:
         current_app.logger.error(e)
-        return {'status' : 'fail', 'message': 'Error during deletion'}, 500
+        return {'message': 'Error during deletion'}, 500
     return '', 204

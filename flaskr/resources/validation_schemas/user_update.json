@@ -2,7 +2,7 @@
     "type": "object",
     "properties": {
         "username": { "type": "string", "minLength": 4, "maxLength": 100 },
-        "name": { "type": "string", "minLength": 4, "maxLength": 100 },
+        "publicName": { "type": "string", "minLength": 4, "maxLength": 100 },
         "email": { "type": "string", "format": "idn-email" ,"pattern": "[a-z0-9\\._%+!$&*=^|~#%{}\/\\-]+@([a-z0-9\\-]+\\.){1,}([a-z]{2,22})" },
         "locale": {"type": "string",  "pattern": "^[a-z][a-z]_[A-Z][A-Z]$"},
         "password": { "type": "string", "minLength": 4, "maxLength": 100 }

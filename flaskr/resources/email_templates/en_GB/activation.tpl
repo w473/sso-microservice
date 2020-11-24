@@ -13,7 +13,7 @@ Subject: Activation
             <td>
                 <p style="margin: 0;">HI!</p>
                 <div>
-                    You created account in our website with name {{name}}<br>
+                    You created account in our website with name {{publicName}}<br>
                     Open <a href="{{url}}">aktywacji</a> to activate your account<br>
 bests<br>
                 </div>

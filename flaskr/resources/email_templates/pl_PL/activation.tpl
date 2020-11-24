@@ -13,7 +13,7 @@ Subject: Aktywacja
             <td>
                 <p style="margin: 0;">HEY!</p>
                 <div>
-                    Założyłeś u nas konto na usera {{name}}<br>
+                    Założyłeś u nas konto na usera {{publicName}}<br>
 Wejdz na strone <a href="{{url}}">aktywacji</a> aby aktywowac swoje konto<br>
 pozdrawiamy<br>
                 </div>
