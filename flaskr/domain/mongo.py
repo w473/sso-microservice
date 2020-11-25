@@ -1,7 +1,7 @@
 from flask import current_app
-from pymongo import MongoClient
+from pymongo import MongoClient, database
 
-def getDb():
+def getDb() -> database.Database:
     if current_app.db == None:
         raise Exception('DB connection has not been initialized')
     return current_app.db

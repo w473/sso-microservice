@@ -1,11 +1,11 @@
 from flask import Blueprint, abort, request, current_app
 from passlib.hash import sha256_crypt
-from ..domain.mongo import getDb
-from ..services.JwtService import encodeJwt
+from flaskr.domain.mongo import getDb
+from flaskr.services.JwtService import encodeJwt
 from flaskr.services.AuthService import is_logged, parseToken
-from ..domain.repositories.UserRepository import UserRepository 
-from ..domain.repositories.RefreshTokenRepository import RefreshTokenRepository 
-from ..domain.documents.RefreshToken import RefreshToken
+from flaskr.domain.repositories.UserRepository import UserRepository 
+from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenRepository 
+from flaskr.domain.documents.RefreshToken import RefreshToken
 import uuid
 
 app = Blueprint('auth', __name__, url_prefix='/auth')
@@ -36,8 +36,7 @@ def login(username, password):
 @app.route("/logout", methods=['POST'])
 @is_logged()
 def logout():
-    # i teraz ogarnoc login przez Jwt
-    # i automatyczne wydawanie nowego tokenu jak nie wazny
+    # logout
     return {}
 
 @app.route("/tokenRefresh", methods=['GET'])
