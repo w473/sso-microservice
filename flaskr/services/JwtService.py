@@ -31,5 +31,5 @@ def decodeJwt(jwtString:str, notAllowExpired: bool = True) -> dict:
     key = repo.findOne(kid)
     if key == None:
         raise Exception('JWT invalid - key with kid '+ kid +' does not exists')
-    return jwt.decode(jwtString, key.publicKey, algorithms=key.algorithm, verify_expiration = notAllowExpired)    
+    return jwt.decode(jwtString, key.publicKey, algorithms=key.algorithm, verify_exp = notAllowExpired)    
     

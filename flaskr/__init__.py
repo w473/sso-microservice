@@ -38,6 +38,7 @@ def create_app(test_config=None):
 
     EmailService.setEmailService(
         app, 
+        test_config is None, 
         app.config['MAILING_SMTP_SERVER'], 
         app.config['MAILING_SMTP_PORT'], 
         app.config['MAILING_SENDER'], 
@@ -69,7 +70,12 @@ def create_app(test_config=None):
 
     @app.errorhandler( JSONSchemaValidatorFailException )
     def onValidationError( e ):
+        logger.info(e)
+        return { 'data' : e.errors }, 400
+    
+    @app.errorhandler( Exception )
+    def onException( e ):
         logger.error(e)
-        return {'data':e.errors},400
+        return { 'data' : 'Unexpected error occured' }, 500
 
     return app

@@ -19,13 +19,13 @@ app = Blueprint('user', __name__, url_prefix='/user')
 def create():
     content = request.get_json(silent=True)
     if content == None:
-        return {'message': 'Invalid Request'}, 400
+        return {'message': 'Invalid request'}, 400
 
     user = User(content)
     try:
         user.setCreate(datetime.utcnow())
         user.setActive(False)
-        password = sha256_crypt.encrypt(content.get('password'))
+        password = sha256_crypt.hash(content.get('password'))
         user.setPassword(password)
         repo = UserRepository(getDb())
         repo.add(user)
@@ -140,7 +140,7 @@ def getUser(username: str = None):
         else:
             return {'message': 'User does not exists'}, 400
     else:
-        return {'message': 'Forbidden'}, 403
+        return {'message': 'Not allowed'}, 403
 
 @app.route("/", methods=['DELETE'])
 @app.route("/<username>", methods=['DELETE'])
@@ -152,9 +152,9 @@ def deleteUser(username: str = None):
     elif g.user.hasRole('ADMIN') and username != None:
         user = repo.findByUsername(username)
         if user == None:
-            return { 'message': 'User not found'}, 400
+            return {'message': 'User not found'}, 400
     else:
-        return {'message': 'Forbidden'}, 403
+        return {'message': 'Not allowed'}, 403
     repoRT = RefreshTokenRepository(getDb())
     try:
         repo.delete(user.id)

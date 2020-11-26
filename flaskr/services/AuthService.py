@@ -12,17 +12,19 @@ logger = logging.getLogger( __name__ )
 def parseToken(notAllowExpired: bool = True) -> dict:
     if 'Authorization' in request.headers:
         tokenString = request.headers['Authorization']
+    else:
+        raise AuthorizationException('Authorization header not found')
     if not tokenString:
         raise AuthorizationException('Valid token is missing')
 
     try:
         return decodeJwt(tokenString.replace('Bearer ', '', 1), notAllowExpired)
     except ExpiredSignature as e:
-        raise AuthorizationException('token expired')
+        raise AuthorizationException('Token expired')
     except Exception as e:
         logger.info(tokenString)
         logger.info(e)
-        raise AuthorizationException('token is invalid')
+        raise AuthorizationException('Token is invalid')
 
 def authorize() -> User:
     try:
@@ -34,15 +36,15 @@ def authorize() -> User:
             logger.info('User found: '+username)
         else:
             logger.info('User not found: '+ username)
-            raise AuthorizationException('token is invalid - user not found')
+            raise AuthorizationException('Token is invalid - user not found')
         return user
     except AuthorizationException as e:
         raise e
     except ExpiredSignature as e:
-        raise AuthorizationException('token expired')
+        raise AuthorizationException('Token expired')
     except Exception as e:
         logger.info(e)
-        raise AuthorizationException('token is invalid')
+        raise AuthorizationException('Token is invalid')
 
 def is_logged(role=None):
     def decorator(func):
@@ -52,20 +54,17 @@ def is_logged(role=None):
                 user = authorize()
                 if role != None:
                     if user.isActive == False:
-                        return {'message': 'Not Allowed'}, 403
+                        return {'message': 'Not allowed'}, 403
 
                     if user.hasRole(role):
                         g.user = user
                         return func(*args, **kwargs)
                     else:
-                        return {'message': 'Not Allowed'}, 403
+                        return {'message': 'Not allowed'}, 403
                 g.user = user
                 return func(*args, **kwargs)
             except AuthorizationException as e:
                 return jsonify({'message': e.getMessage()}), 403
-            except Exception as e:
-                logger.error(e)
-                return jsonify({'message': 'Unexpected error occured'}) 
         return wrapper
     return decorator
 

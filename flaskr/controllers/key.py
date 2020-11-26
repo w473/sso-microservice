@@ -4,6 +4,7 @@ from ..domain.repositories.KeyRepository import KeyRepository
 from ..domain.mongo import getDb
 from ..formatters.KeyFormatter import forApiAsDict
 from flaskr.services.AuthService import is_logged
+from pymongo.errors import InvalidId
 
 app = Blueprint('key', __name__, url_prefix='/key')
 
@@ -19,9 +20,17 @@ def generate():
 @is_logged(role='ADMIN')
 def get(id):
     repo = KeyRepository(getDb())
-    return repo.findOne(id).publicKey
+    try:
+        key = repo.findOne(id)
+    except InvalidId:
+        return {'message':'Key id is invalid'}, 400
+    
+    if key == None:
+        return {'message':'Key has not been found'}, 404
+    else:
+        return key.publicKey
 
-@app.route("/", methods=['GET'], endpoint='listAll')
+@app.route("", methods=['GET'], endpoint='listAll')
 @is_logged(role='ADMIN')
 def listAll():
     repo = KeyRepository(getDb())

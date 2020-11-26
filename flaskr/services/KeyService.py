@@ -6,12 +6,13 @@ from ..domain.mongo import getDb
 
 class KeyService:
     def generate(self):
-        key = RSA.generate(4096)
+        keyBytes = 512
+        key = RSA.generate(keyBytes*8)
         return KeyDocument(
             key.publickey().exportKey('PEM'),
             key.exportKey('PEM'),
-            'RS'+str(key.size_in_bytes())
-            )
+            'RS'+str(keyBytes)
+        )
     
     def save(self, keyDocument):
         repo = KeyRepository(getDb())

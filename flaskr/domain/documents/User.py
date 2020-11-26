@@ -45,8 +45,6 @@ class User:
         self.password = password
 
     def toDictResponse(self) -> dict:
-        print(self.create)
-        print('dupa')
         return {
             'username': self.username,
             'email': self.email,

@@ -10,10 +10,19 @@ import uuid
 
 app = Blueprint('auth', __name__, url_prefix='/auth')
 
-@app.route("/login/<username>/<password>", methods=['POST'])
-def login(username, password):
-    repo = UserRepository(getDb())
+@app.route("/login", methods=['POST'])
+def login():
+    content = request.get_json(silent=True)
+    if content == None:
+        return {'message': 'Invalid request'}, 400
 
+    username = content.get('username')
+    password = content.get('password')
+
+    if username == None or password == None:
+        return {'message': 'Invalid request'}, 400
+
+    repo = UserRepository(getDb())
     user = repo.findByUsername(username)
     
     if user == None or sha256_crypt.verify(password, user.password) == False:
@@ -36,7 +45,7 @@ def login(username, password):
 @app.route("/logout", methods=['POST'])
 @is_logged()
 def logout():
-    # logout
+    # remove all refresh tokens?
     return {}
 
 @app.route("/tokenRefresh", methods=['GET'])
@@ -50,7 +59,6 @@ def refreshToken():
             user = userRepo.findByUsername(username)
             tokenRepo = RefreshTokenRepository(getDb())
             if user and tokenRepo.exist(refreshToken, user.id): 
-                current_app.logger.info('istniie refhres')
                 tokenRepo.delete(refreshToken)
                 refreshToken = RefreshToken(user.id, str(uuid.uuid4()))
                 tokenRepo.save(refreshToken)
@@ -61,5 +69,5 @@ def refreshToken():
     except Exception as e:
         current_app.logger.info(e)
 
-    return {"message": "Not Allowed"}, 403
+    return {"message": "Not allowed"}, 403
 
