@@ -1,7 +1,7 @@
 from flask import Blueprint, abort
 
-app = Blueprint('index', __name__)
+controller = Blueprint('index', __name__)
 
-@app.route("/")
+@controller.route("/")
 def index():
     return "Welcome to Trakayo SSO"

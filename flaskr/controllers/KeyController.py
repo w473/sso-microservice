@@ -6,9 +6,12 @@ from ..formatters.KeyFormatter import forApiAsDict
 from flaskr.services.AuthService import is_logged
 from pymongo.errors import InvalidId
 
-app = Blueprint('key', __name__, url_prefix='/key')
+import logging
+logger = logging.getLogger( __name__ )
 
-@app.route("/generate", methods=['PUT'], endpoint='generate')
+controller = Blueprint('key', __name__, url_prefix='/key')
+
+@controller.route("/generate", methods=['PUT'], endpoint='generate')
 @is_logged(role='ADMIN')
 def generate():
     service = KeyService()
@@ -16,7 +19,7 @@ def generate():
     service.save(key)
     return '', 204
 
-@app.route("/<id>", methods=['GET'], endpoint='get')
+@controller.route("/<id>", methods=['GET'], endpoint='get')
 @is_logged(role='ADMIN')
 def get(id):
     repo = KeyRepository(getDb())
@@ -30,7 +33,19 @@ def get(id):
     else:
         return key.publicKey
 
-@app.route("", methods=['GET'], endpoint='listAll')
+@controller.route("/<id>", methods=['DELETE'], endpoint='delete')
+@is_logged(role='ADMIN')
+def delete(id):
+    repo = KeyRepository(getDb())
+    try:
+        if repo.delete(id): 
+            return '', 204
+        else:
+            return {'message':'Key has not been found'}, 404
+    except InvalidId:
+        return {'message':'Key id is invalid'}, 400
+
+@controller.route("", methods=['GET'], endpoint='listAll')
 @is_logged(role='ADMIN')
 def listAll():
     repo = KeyRepository(getDb())

@@ -12,9 +12,9 @@ from flaskr.services import AuthService, RequestService, EmailService
 import logging
 logger = logging.getLogger( __name__ )
 
-app = Blueprint('user', __name__, url_prefix='/user')
+controller = Blueprint('user', __name__, url_prefix='/user')
 
-@app.route("", methods=['POST'])
+@controller.route("", methods=['POST'])
 @RequestService.validate(kind='user_create')
 def create():
     content = request.get_json(silent=True)
@@ -60,20 +60,20 @@ def create():
 
     return '', 204
 
-@app.route("", methods=['PATCH'])
-@app.route("/<username>", methods=['PATCH'])
-@RequestService.validate(kind='user_update')
+@controller.route("", methods=['PATCH'])
+@controller.route("/<username>", methods=['PATCH'])
 @AuthService.is_logged()
+@RequestService.validate(kind='user_update')
 def update(username: str = None):
     repo = UserRepository(getDb())
     if username == None:
         user = g.user
-    elif g.user.hasRole('admin') and username != None:
+    elif g.user.hasRole('ADMIN') and username != None:
         user = repo.findByUsername(username)
         if user == None:
             return {'message': 'User not found'}, 400
     else:
-        return {'message': 'Forbidden'}, 403
+        return {'message': 'Not allowed'}, 403
 
     content = request.get_json(silent=True)
     if content == None:
@@ -81,20 +81,17 @@ def update(username: str = None):
 
     try:
         if content.get('password'):
-            content['password'] = sha256_crypt.encrypt(content.get('password'))
+            content['password'] = sha256_crypt.hash(content.get('password'))
         
-        repo = UserRepository(getDb())
-        newUser = User(content)
-        newUser.create = user.create
-        newUser.roles = user.roles
-        newUser.id = user.id
         hasNewEmail = False
-
         if content.get('email') and user.email != content.get('email'):
-            newUser.setActive(False)
+            user.setActive(False)
             hasNewEmail = True
 
-        repo.update(newUser)
+        for key, value in content.items():
+            setattr(user, key, value)
+
+        repo.update(user)
         if hasNewEmail:
             return {'message': 'Please activate your email'}, 200
         else:
@@ -110,7 +107,7 @@ def update(username: str = None):
         return {'message': 'User already exists! - this error should not be here'}, 400
     return '', 204
 
-@app.route("/<username>/activate/<code>", methods=['PATCH'])
+@controller.route("/<username>/activate/<code>", methods=['PATCH'])
 def activate(username, code):
     repo = UserRepository(getDb())
     user = repo.findByUsername(username)
@@ -126,8 +123,8 @@ def activate(username, code):
 
     return '', 204
 
-@app.route("", methods=['GET'], endpoint='get')
-@app.route("/<username>", methods=['GET'], endpoint='get')
+@controller.route("", methods=['GET'], endpoint='get')
+@controller.route("/<username>", methods=['GET'], endpoint='get')
 @AuthService.is_logged()
 def getUser(username: str = None):
     if username == None:
@@ -142,8 +139,8 @@ def getUser(username: str = None):
     else:
         return {'message': 'Not allowed'}, 403
 
-@app.route("/", methods=['DELETE'])
-@app.route("/<username>", methods=['DELETE'])
+@controller.route("", methods=['DELETE'])
+@controller.route("/<username>", methods=['DELETE'])
 @AuthService.is_logged()
 def deleteUser(username: str = None):
     repo = UserRepository(getDb())

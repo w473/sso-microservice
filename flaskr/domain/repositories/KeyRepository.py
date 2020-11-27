@@ -31,4 +31,7 @@ class KeyRepository(AbstractRepository):
             keyDoc = KeyDocument(doc['publicKey'], doc['privateKey'], doc['algorithm'], doc['_id'])
             ret.append(keyDoc)
         return ret
+    
+    def delete(self, id) -> bool:
+        return self.client.securityKey.delete_one({"_id": ObjectId(id)}).deleted_count == 1
 

@@ -16,11 +16,18 @@ class UserRepository(AbstractRepository):
         """
         docstring
         """
-        logger.error(user.toDict())
-        logger.error(user.id)
-        logger.error({"_id": ObjectId(user.id)})
-        a = self.client.user.replace_one({"_id": ObjectId(user.id)}, user.toDict())
-        logger.error(a)
+        replacement = {  "$set": {
+            'username': user.username,
+            'email': user.email,
+            'publicName': user.publicName,
+            'locale': user.locale,
+            'roles': user.roles,
+            'isActive': user.isActive,
+            'password': user.password,
+            'activationCode' : user.activationCode
+        }}
+
+        self.client.user.update_one({"_id": ObjectId(user.id)}, replacement)
     
     def findOne(self, userId):
         doc = self.client.user.find_one({"_id": ObjectId(userId)})

@@ -8,9 +8,9 @@ from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenReposi
 from flaskr.domain.documents.RefreshToken import RefreshToken
 import uuid
 
-app = Blueprint('auth', __name__, url_prefix='/auth')
+controller = Blueprint('auth', __name__, url_prefix='/auth')
 
-@app.route("/login", methods=['POST'])
+@controller.route("/login", methods=['POST'])
 def login():
     content = request.get_json(silent=True)
     if content == None:
@@ -42,13 +42,13 @@ def login():
 
     return encodeJwt(payload), 200
 
-@app.route("/logout", methods=['POST'])
+@controller.route("/logout", methods=['POST'])
 @is_logged()
 def logout():
     # remove all refresh tokens?
     return {}
 
-@app.route("/tokenRefresh", methods=['GET'])
+@controller.route("/tokenRefresh", methods=['GET'])
 def refreshToken():
     try:
         token = parseToken(False)

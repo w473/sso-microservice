@@ -60,12 +60,12 @@ def create_app(test_config=None):
     import jsonschema
 
     # apply the blueprints to the app
-    from flaskr.controllers import index, user, key, auth
+    from flaskr.controllers import IndexController, UserController, KeyController, AuthController
 
-    app.register_blueprint(index.app)
-    app.register_blueprint(user.app)
-    app.register_blueprint(key.app)
-    app.register_blueprint(auth.app)
+    app.register_blueprint(IndexController.controller)
+    app.register_blueprint(UserController.controller)
+    app.register_blueprint(KeyController.controller)
+    app.register_blueprint(AuthController.controller)
 
 
     @app.errorhandler( JSONSchemaValidatorFailException )
