@@ -8,6 +8,7 @@ from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenReposi
 from flaskr.domain.mongo import getDb, DbClient
 from flaskr.formatters.UserFormatter import forApiAsDict
 from flaskr.services import AuthService, RequestService, EmailService
+import click
 
 import logging
 logger = logging.getLogger( __name__ )
@@ -23,40 +24,9 @@ def create():
 
     user = User(content)
     try:
-        user.setCreate(datetime.utcnow())
-        user.setActive(False)
-        password = sha256_crypt.hash(content.get('password'))
-        user.setPassword(password)
-        repo = UserRepository(getDb())
-        repo.add(user)
-
-        emailService = EmailService.getEmailService()
-
-        activationUrl = current_app.config['BASE_URL'] + url_for(
-            'user.activate', 
-            username=user.username, 
-            code=user.activationCode
-        )
-
-        contents = emailService.prepareContents(
-            'activation', 
-            user.locale, 
-            username=user.username,
-            publicName=user.publicName,
-            url=activationUrl
-        )   
-        #TODO offline!!   
-        emailService.sendEmail(user.publicName, user.email, contents)
-
-    except DuplicateKeyError as e:
-        keyColumn = list(e.details.get('keyPattern').keys())[0]
-        if keyColumn == 'username':
-            return {'message': 'Please choose different username'}, 400
-        elif keyColumn == 'email':
-            return {'message': 'You cannot use this email address'}, 400
-        else:
-            raise Exception('Unknown column key raised error : "'+keyColumn+'"')
-        return {'message': 'User already exists! - this error should not be here'}, 400
+        createUser(user, content.get('password'))
+    except UserControllerException as e:
+        return {'message': str(e)}, 400
 
     return '', 204
 
@@ -78,6 +48,9 @@ def update(username: str = None):
     content = request.get_json(silent=True)
     if content == None:
         return {'message': 'Validation failed'}, 400
+
+    if g.user.hasRole('ADMIN') == False and 'roles' in content:
+        return {'message': 'Not allowed'}, 403
 
     try:
         if content.get('password'):
@@ -160,3 +133,67 @@ def deleteUser(username: str = None):
         current_app.logger.error(e)
         return {'message': 'Error during deletion'}, 500
     return '', 204
+
+
+@controller.cli.command('create')
+@click.option('--name', prompt='Name', required=True, type=str)
+@click.option('--email', prompt='email', required=True, type=str)
+@click.option('--publicName', prompt='publicName', required=True, type=str)
+@click.option('--locale', prompt='locale', required=True, type=str)
+@click.option('--password', prompt='password', required=True, type=str)
+@click.option('--isAdmin', prompt='isAdmin', required=True, type=bool)
+def createUserCli(username: str, email: str, publicName: str, locale: str, password: str, isAdmin : bool) -> None:
+    userDict = {
+        username: username,
+        email: email,
+        publicName: publicName,
+        locale: locale
+    }
+
+    RequestService.validateDict(userDict, 'user_create')
+
+    user = User(userDict)
+    if isAdmin:
+        user.addRole('ADMIN')
+
+    createUser(user, password)
+
+def createUser(user: User, password: str) -> None:
+    try:
+        user.setCreate(datetime.utcnow())
+        user.setActive(False)
+        password = sha256_crypt.hash(password)
+        user.setPassword(password)
+        repo = UserRepository(getDb())
+        repo.add(user)
+
+        emailService = EmailService.getEmailService()
+
+        activationUrl = current_app.config['BASE_URL'] + url_for(
+            'user.activate', 
+            username=user.username, 
+            code=user.activationCode
+        )
+
+        contents = emailService.prepareContents(
+            'activation', 
+            user.locale, 
+            username=user.username,
+            publicName=user.publicName,
+            url=activationUrl
+        )   
+        #TODO offline!!   
+        emailService.sendEmail(user.publicName, user.email, contents)
+
+    except DuplicateKeyError as e:
+        keyColumn = list(e.details.get('keyPattern').keys())[0]
+        if keyColumn == 'username':
+            raise UserControllerException('Please choose different username')
+        elif keyColumn == 'email':
+            raise UserControllerException('You cannot use this email address')
+        else:
+            raise Exception('Unknown column key raised error : "'+keyColumn+'"')
+        raise UserControllerException('User already exists!')
+
+class UserControllerException(Exception):
+    pass

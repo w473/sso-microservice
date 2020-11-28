@@ -19,8 +19,11 @@ class User:
     def id(self) -> str:
         return str(self.id)
 
-    def setRoles(self, roles) -> None:
+    def setRoles(self, roles: list) -> None:
         self.roles = roles
+
+    def addRole(self, role: str) -> None:
+        self.roles.append(role)
     
     def hasRole(self, role: str) -> bool:
         if role in self.roles:

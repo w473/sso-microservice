@@ -13,10 +13,8 @@ controller = Blueprint('key', __name__, url_prefix='/key')
 
 @controller.route("/generate", methods=['PUT'], endpoint='generate')
 @is_logged(role='ADMIN')
-def generate():
-    service = KeyService()
-    key = service.generate()
-    service.save(key)
+def neweKeyGenerate():
+    generate()
     return '', 204
 
 @controller.route("/<id>", methods=['GET'], endpoint='get')
@@ -51,3 +49,12 @@ def listAll():
     repo = KeyRepository(getDb())
     docList = repo.fetchAll()
     return forApiAsDict(docList)
+
+@controller.cli.command('generate')
+def newKeyGenerateCli():
+    generate()
+
+def generate() -> None:
+    service = KeyService()
+    key = service.generate()
+    service.save(key)

@@ -110,12 +110,27 @@ def testUserUpdate(client: FlaskClient, authHeader: dict):
     }
 
     response = client.patch('/user/porato', json=json, headers=authHeader)
-    print(response.data)
+    assert response.status_code == 403
+    assert response.data == b'{"message":"Not allowed"}\n'
+
+    json = {
+        'roles': ['USER', 'ADMIN']
+    }
+
+    response = client.patch('/user/porato', json=json, headers=authHeader)
     assert response.status_code == 403
     assert response.data == b'{"message":"Not allowed"}\n'
 
 def testUserUpdateAdmin(client: FlaskClient, authHeaderAdmin: dict):
     userUpdate(client, authHeaderAdmin, '/testuser')
+
+    json = {
+        'roles': ['USER', 'ADMIN']
+    }
+
+    response = client.patch('/user/testuser', json=json, headers=authHeaderAdmin)
+    assert response.status_code == 204
+    assert response.data == b''
 
 def userUpdate(client: FlaskClient, authHeader: dict, username=''):
     response = client.patch('/user'+username)
@@ -189,6 +204,22 @@ def userUpdate(client: FlaskClient, authHeader: dict, username=''):
     response = client.patch('/user'+username, json=json, headers=authHeader)
     assert response.status_code == 200
     assert response.data == b'{"message":"Please activate your email"}\n'
+
+    json = {
+        'roles': 'dupa'
+    }
+
+    response = client.patch('/user'+username, json=json, headers=authHeader)
+    assert response.status_code == 400
+    assert response.data == b'{"data":{"roles":"\'dupa\' is not of type \'array\'"}}\n'
+
+    json = {
+        'roles': ['USER', 'TOMATO']
+    }
+
+    response = client.patch('/user'+username, json=json, headers=authHeader)
+    assert response.status_code == 400
+    assert response.data == b'{"data":{"roles.1":"\'TOMATO\' is not one of [\'USER\', \'ADMIN\']"}}\n'
 
 def testActivate(client: FlaskClient):
     response = client.patch('/user/sssss/activate/someactivationcode')

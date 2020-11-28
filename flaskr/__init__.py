@@ -1,5 +1,4 @@
 import os
-
 from flask import Flask
 from flaskr.services.RequestService import JSONSchemaValidatorFailException
 from flaskr.domain import mongo
@@ -67,6 +66,9 @@ def create_app(test_config=None):
     app.register_blueprint(KeyController.controller)
     app.register_blueprint(AuthController.controller)
 
+    
+    from flaskr.commands import InitCommand
+    app.register_blueprint(InitCommand.command)
 
     @app.errorhandler( JSONSchemaValidatorFailException )
     def onValidationError( e ):

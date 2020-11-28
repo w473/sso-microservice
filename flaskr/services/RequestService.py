@@ -18,24 +18,27 @@ def get_schema( kind, operation='default' ):
     except:
         raise JSONSchemaValidatorException( "The validation schema "+path+" or operation could not be found" )
 
-def validate(kind, operation='default', root=None ):
+def validate(kind: str, operation: str ='default' ):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            schema = get_schema( kind, operation )
-            if schema is None:
-                raise JSONSchemaValidatorException( "The validation schema kind or operation could not be found" )
-            validator = Draft7Validator(schema)
-            errors = {}
-            for error in validator.iter_errors(request.json):
-                errors['.'.join(error.path)] = error.message
-            if len(errors) > 0:
-                raise JSONSchemaValidatorFailException(errors)
-            
+            validateDict(request.json, kind, operation)            
             return f(*args, **kwargs)
         return wrapper
     return decorator
 
+def validateDict(dict: dict, kind: str, operation: str='default'):
+    schema = get_schema( kind, operation )
+    if schema is None:
+        raise JSONSchemaValidatorException( "The validation schema kind or operation could not be found" )
+    validator = Draft7Validator(schema)
+    errors = {}
+    for error in validator.iter_errors(dict):
+        path = '.'.join(map(str, error.path))
+        errors[path] = error.message
+    if len(errors) > 0:
+        raise JSONSchemaValidatorFailException(errors)
+            
 class JSONSchemaValidatorException( Exception ):
     pass
 
