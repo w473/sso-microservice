@@ -1,1 +1,9 @@
-flask pymongo pycrypto pycryptodome pyjwt pyjwt[crypto] jsonschema jsonschema[format] pytest
+flask
+pymongo
+pycrypto
+pycryptodome
+pyjwt
+pyjwt[crypto]
+jsonschema
+jsonschema[format]
+pytest

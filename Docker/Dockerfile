@@ -1,6 +1,6 @@
-FROM tiangolo/uwsgi-nginx-flask:python3.8
-RUN apk --update add bash nano
-ENV STATIC_URL /static
-ENV STATIC_PATH /var/www/app/static
-COPY ./requirements.txt /var/www/requirements.txt
+FROM python:3.8
+RUN apt-get update && apt-get install -y vim
+COPY requirements.txt /var/www/requirements.txt
+WORKDIR /var/www/app
 RUN pip install -r /var/www/requirements.txt
+CMD [ "flask", "run","--host=0.0.0.0","--port=5000" ]
