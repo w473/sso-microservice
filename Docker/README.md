@@ -1,8 +1,8 @@
-source machine:
+## source machine:
 https://hub.docker.com/_/python
 
-build command:
+## build command:
 docker build -t sso-py:latest .
 
-run:command:
+## run:command:
 docker-run.sh
