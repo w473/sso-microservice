@@ -5,5 +5,4 @@ build command:
 docker build -t sso-py:latest .
 
 run:command:
-
-FLASK_APP
+docker-run.sh
