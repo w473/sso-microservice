@@ -1,5 +1,6 @@
 flask
-pymongo
+PyMySQL
+PyMySQL[rsa]
 pycrypto
 pycryptodome
 pyjwt
@@ -7,3 +8,5 @@ pyjwt[crypto]
 jsonschema
 jsonschema[format]
 pytest
+requests
+jwcrypto

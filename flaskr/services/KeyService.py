@@ -1,8 +1,9 @@
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from ..domain.documents.Key import Key as KeyDocument
-from ..domain.repositories.KeyRepository import KeyRepository 
-from ..domain.mongo import getDb
+from ..domain.repositories.KeyRepository import KeyRepository
+from ..domain.db import getDb
+
 
 class KeyService:
     def generate(self):
@@ -13,8 +14,7 @@ class KeyService:
             key.exportKey('PEM'),
             'RS'+str(keyBytes)
         )
-    
+
     def save(self, keyDocument):
         repo = KeyRepository(getDb())
         repo.save(keyDocument)
-

@@ -1,36 +1,54 @@
 from .AbstractRepository import AbstractRepository
-from bson.objectid import ObjectId
 from ..documents.RefreshToken import RefreshToken
 from ..documents.User import User
 from flask import current_app
+from pymysql.connections import Connection
+import uuid
 import logging
-logger = logging.getLogger( __name__ )
+logger = logging.getLogger(__name__)
+
 
 class RefreshTokenRepository(AbstractRepository):
-    def save(self, refreshToken : RefreshToken) -> None:
+    def __init__(self, connection: Connection) -> None:
+        super().__init__(connection, 'refreshToken')
+
+    def save(self, refreshToken: RefreshToken) -> None:
         """
         docstring
         """
-        self.client.refreshToken.insert_one(
-            refreshToken.toDict()
+        self.insertOne(
+            {
+                'token': uuid.UUID(refreshToken.token).bytes,
+                'userId': uuid.UUID(refreshToken.userId).bytes,
+            }
         )
 
     def exist(self, token: str, userId: str) -> bool:
-        doc = self.client.refreshToken.find_one({"_id": token, "userId" : userId})
+        doc = self.findOneBy(
+            {
+                "token": uuid.UUID(token).bytes,
+                "userId": uuid.UUID(userId).bytes
+            }
+        )
         if doc != None:
             return True
         return False
 
     def delete(self, token: str) -> None:
-        self.client.refreshToken.delete_one({"_id": token})
-    
-    def deleteForUser(self, user: User) -> None:
-        self.client.refreshToken.delete_many({"userId": ObjectId(user.id)})
+        self.deleteBy({"token": uuid.UUID(token).bytes})
 
-    def findByUser(self, user: User) -> list:
-        docs = self.client.refreshToken.find({"userId": ObjectId(user.id)})
+    def deleteForUser(self, userId: str) -> None:
+        self.deleteBy({"userId": uuid.UUID((userId)).bytes})
+
+    def findByUser(self, userId: uuid) -> list:
+        docs = self.findAllBy({"userId": uuid.UUID((userId).bytes)})
         ret = []
         for doc in docs:
-            ret.append(RefreshToken(doc['token'], doc['_id']))
-        
+            ret.append(
+                RefreshToken(
+                    uuid.UUID(doc['token']).hex,
+                    uuid.UUID(doc['token']).hex
+                )
+            )
+
         return ret

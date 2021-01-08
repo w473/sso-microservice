@@ -8,6 +8,6 @@ class RefreshToken:
 
     def toDict(self):
         return {
-            '_id': self.token,
+            'id': self.token,
             'userId': self.userId
         }

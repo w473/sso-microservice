@@ -7,7 +7,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        'flask','pymongo','pycrypto', 'pycryptodome', 'pyjwt', 'pyjwt[crypto]', 
-        'jsonschema', 'jsonschema[format]', 'pytest'
+        'flask', 'PyMySQL', 'PyMySQL[rsa]', 'pycrypto', 'pycryptodome',
+        'jsonschema', 'jsonschema[format]', 'pytest', 'requests', 'jwcrypto', 'passlib'
     ],
 )

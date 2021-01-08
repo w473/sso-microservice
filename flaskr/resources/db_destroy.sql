@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS securityKey;
+DROP TABLE IF EXISTS refreshToken;
