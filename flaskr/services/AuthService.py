@@ -1,15 +1,18 @@
 from flask import g, current_app, Request, request, jsonify
 from functools import wraps
-from flaskr.services.JwtService import decodeJwt
-from flaskr.domain.mongo import getDb
-from flaskr.domain.repositories.UserRepository import UserRepository
+from flaskr.services.JwtService import decodeJwt, JWTExpiredException
+from flaskr.domain.db import getDb
 from flaskr.domain.documents.User import User
-from jwt import ExpiredSignature
+from flaskr.services import UserService
+from jwt.exceptions import ExpiredSignatureError
 import logging
+import sys
+import traceback
 
-logger = logging.getLogger( __name__ )
+logger = logging.getLogger(__name__)
 
-def parseToken(notAllowExpired: bool = True) -> dict:
+
+def parseToken(allowExpired: bool = False) -> dict:
     if 'Authorization' in request.headers:
         tokenString = request.headers['Authorization']
     else:
@@ -18,33 +21,39 @@ def parseToken(notAllowExpired: bool = True) -> dict:
         raise AuthorizationException('Valid token is missing')
 
     try:
-        return decodeJwt(tokenString.replace('Bearer ', '', 1), notAllowExpired)
-    except ExpiredSignature as e:
+        return decodeJwt(tokenString.replace('Bearer ', '', 1))
+    except JWTExpiredException as e:
+        if allowExpired:
+            return e.payload
+        else:
+            raise e
+    except ExpiredSignatureError as e:
         raise AuthorizationException('Token expired')
     except Exception as e:
-        logger.info(tokenString)
         logger.info(e)
         raise AuthorizationException('Token is invalid')
+
 
 def authorize() -> User:
     try:
         token = parseToken()
-        repo = UserRepository(getDb())
-        username = token.get('username')
-        user = repo.findByUsername(username)
+        email = token.get('email')
+        user = UserService.findUser(email, {})
         if user:
-            logger.info('User found: '+username)
+            logger.info('User found: '+email)
         else:
-            logger.info('User not found: '+ username)
+            logger.info('User not found: ' + email)
             raise AuthorizationException('Token is invalid - user not found')
+        print(user.id)
         return user
     except AuthorizationException as e:
         raise e
-    except ExpiredSignature as e:
+    except ExpiredSignatureError as e:
         raise AuthorizationException('Token expired')
     except Exception as e:
-        logger.info(e)
+        logger.error(e)
         raise AuthorizationException('Token is invalid')
+
 
 def is_logged(role=None):
     def decorator(func):
@@ -64,9 +73,11 @@ def is_logged(role=None):
                 g.user = user
                 return func(*args, **kwargs)
             except AuthorizationException as e:
+                print(e)
                 return jsonify({'message': e.getMessage()}), 403
         return wrapper
     return decorator
+
 
 class AuthorizationException(Exception):
     def __init__(self, message: str):

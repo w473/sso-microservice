@@ -7,3 +7,11 @@ python3 -m venv venv
 
 ## run app
 run.sh
+
+### CLI COMMANDS
+flask init db
+flask key generate
+
+### test run
+. venv/bin/activate
+pytest

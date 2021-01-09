@@ -1,11 +1,16 @@
-import pytest, json, sys, re, datetime
-from bson.objectid import ObjectId
-from bson.binary import Binary
-from bson.json_util import loads, dumps
+import pytest
+import json
+import sys
+import re
+import datetime
+import uuid
+import responses
 from flask import Flask
 from flaskr import create_app
-from flaskr.domain import mongo
+from flaskr.domain import db
 from flask.testing import FlaskClient
+from helper import setUserAdmin, setUserNormal
+
 
 @pytest.fixture
 def app():
@@ -14,18 +19,15 @@ def app():
     # db_fd, db_path = tempfile.mkstemp()
     # create the app with common test config
     testConfig = {
-        'MONGO_URL': "mongodb://localhost:27017/",
-        'MONGO_USERNAME':"user",
-        'MONGO_PASSWORD':"pass",
-        'MONGO_AUTH_SOURCE':"admin",
-        'MONGO_DATABASE':"test_trakayo",
-        'BASE_URL': "http:/127.0.0.1:666",
-        'MAILING_SMTP_SERVER': "",
-        'MAILING_SMTP_PORT': "",
-        'MAILING_SENDER': "",
-        'MAILING_SENDER_EMAIL': "",
-        'MAILING_SMTP_PASSWORD': ""
+        'SECRET_KEY': 'potato',
+        'DB_HOSTNAME': "localhost",
+        'DB_USERNAME': "root",
+        'DB_PASSWORD': "password",
+        'DB_NAME': "test_sso",
+        'USERS_SERVICE_URL': "potatoURL",
+        'MAILING_SERVER': ""
     }
+
     app = create_app(testConfig)
 
     # create the database and load test data
@@ -34,35 +36,56 @@ def app():
 
     yield app
 
+
 def initDB():
-    db = mongo.getDb()
-    for collectionName in db.list_collection_names():
-        db.drop_collection(collectionName)
+    connection = db.getDb()
 
-    mongo.initDb()
-    with open('tests/mongo.json') as json_file:
-        data = loads(json_file.read())
+    db.destroyDb()
+    db.initDb()
+    with open('tests/db.json') as json_file:
+        data = json.load(json_file)
 
-        for collectionName, documents in data.items():
-            db.get_collection(collectionName).insert_many(documents)
+        for dbName, rows in data.items():
+            for row in rows:
+                values = list(row.values())
+                sql = "INSERT INTO `{}` (".format(dbName)
+                sql += ",".join(row.keys())
+                sql += ") VALUES (" + ', '.join((['%s'] * len(values)))+");"
+
+                newVals = list()
+                for val in values:
+                    if type(val) is dict:
+                        newVals.append(uuid.UUID(val.get('value')).bytes)
+                    else:
+                        newVals.append(val)
+                with connection.cursor() as cursor:
+                    cursor.execute(sql, newVals)
+
+                connection.commit()
+
 
 @pytest.fixture
 def client(app: Flask):
     return app.test_client(use_cookies=False)
 
+
 @pytest.fixture
-def authHeader(client) -> dict:
+def authHeader(app: Flask, client) -> dict:
+    setUserNormal(app)
     response = client.post(
-        "/auth/login", json={"username": 'testuser', "password": 'pass'}
+        "/auth/login", json={"email": 'testuser', "password": 'pass'}
     )
-    token = response.get_data( as_text = True )
-    return {"Authorization" : "Bearer "+ token}
+    token = response.get_data(as_text=True)
+
+    return {"Authorization": "Bearer " + token}
 
 
 @pytest.fixture
-def authHeaderAdmin(client) -> dict:
+def authHeaderAdmin(app: Flask, client) -> dict:
+    setUserAdmin(app)
     response = client.post(
-        "/auth/login", json={"username": 'testuseradmin', "password": 'pass'}
+        "/auth/login", json={"email": 'testuseradmin', "password": 'pass'}
     )
-    token = response.get_data( as_text = True )
-    return {"Authorization" : "Bearer "+ token}
+    token = response.get_data(as_text=True)
+
+    return {"Authorization": "Bearer " + token}

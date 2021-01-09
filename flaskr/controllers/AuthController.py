@@ -1,31 +1,31 @@
 from flask import Blueprint, abort, request, current_app
 from passlib.hash import sha256_crypt
-from flaskr.domain.mongo import getDb
+from flaskr.domain.db import getDb
 from flaskr.services.JwtService import encodeJwt
 from flaskr.services.AuthService import is_logged, parseToken
-from flaskr.domain.repositories.UserRepository import UserRepository 
-from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenRepository 
+from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenRepository
 from flaskr.domain.documents.RefreshToken import RefreshToken
+from flaskr.services import UserService
 import uuid
 
 controller = Blueprint('auth', __name__, url_prefix='/auth')
+
 
 @controller.route("/login", methods=['POST'])
 def login():
     content = request.get_json(silent=True)
     if content == None:
-        return {'message': 'Invalid request'}, 400
+        return {'message': 'Invalid request - no json'}, 400
 
-    username = content.get('username')
+    email = content.get('email')
     password = content.get('password')
 
-    if username == None or password == None:
+    if email == None or password == None:
         return {'message': 'Invalid request'}, 400
 
-    repo = UserRepository(getDb())
-    user = repo.findByUsername(username)
-    
-    if user == None or sha256_crypt.verify(password, user.password) == False:
+    user = UserService.findUser(email, {"password": password})
+
+    if user == None:
         return {'message': 'Login failed'}, 403
 
     if user.isActive == False:
@@ -34,13 +34,11 @@ def login():
     refreshToken = RefreshToken(user.id, str(uuid.uuid4()))
     (RefreshTokenRepository(getDb())).save(refreshToken)
 
-    payload = user.toDictResponse()
+    payload = user.toDict()
     payload['refreshToken'] = refreshToken.token
-    
-
-# moze response jakos inaczej? tak zeby latwo refresh token?
 
     return encodeJwt(payload), 200
+
 
 @controller.route("/logout", methods=['POST'])
 @is_logged()
@@ -48,26 +46,24 @@ def logout():
     # remove all refresh tokens?
     return {}
 
+
 @controller.route("/tokenRefresh", methods=['GET'])
 def refreshToken():
     try:
-        token = parseToken(False)
+        token = parseToken(True)
         refreshToken = token.get('refreshToken')
-        username = token.get('username')
+        email = token.get('email')
         if refreshToken:
-            userRepo = UserRepository(getDb())
-            user = userRepo.findByUsername(username)
+            user = UserService.findUser(email, {})
             tokenRepo = RefreshTokenRepository(getDb())
-            if user and tokenRepo.exist(refreshToken, user.id): 
+            if user and tokenRepo.exist(refreshToken, user.id):
                 tokenRepo.delete(refreshToken)
                 refreshToken = RefreshToken(user.id, str(uuid.uuid4()))
                 tokenRepo.save(refreshToken)
-
-                payload = user.toDictResponse()
+                payload = user.toDict()
                 payload['refreshToken'] = refreshToken.token
                 return encodeJwt(payload), 200
     except Exception as e:
         current_app.logger.info(e)
 
     return {"message": "Not allowed"}, 403
-
