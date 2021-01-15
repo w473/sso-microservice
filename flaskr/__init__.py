@@ -6,6 +6,7 @@ import jsonschema
 import logging
 import sys
 import traceback
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,7 @@ def create_app(config=None) -> Flask:
     app = Flask(__name__, instance_relative_config=True)
 
     if config == None:
+        load_dotenv(dotenv_path='../.env')
         config = os.environ
     app.config['USERS_SERVICE_URL'] = config.get('USERS_SERVICE_URL')
     app.config['DB_HOSTNAME'] = config.get('DB_HOSTNAME')

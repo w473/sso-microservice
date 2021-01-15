@@ -3,6 +3,7 @@ from Crypto.PublicKey import RSA
 from ..domain.documents.Key import Key as KeyDocument
 from ..domain.repositories.KeyRepository import KeyRepository
 from ..domain.db import getDb
+import base64
 
 
 class KeyService:
@@ -10,8 +11,8 @@ class KeyService:
         keyBytes = 512
         key = RSA.generate(keyBytes*8)
         return KeyDocument(
-            key.publickey().exportKey('PEM'),
-            key.exportKey('PEM'),
+            base64.b64encode(key.publickey().exportKey('PEM')),
+            base64.b64encode(key.exportKey('PEM')),
             'RS'+str(keyBytes)
         )
 

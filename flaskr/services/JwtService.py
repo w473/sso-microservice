@@ -18,7 +18,7 @@ def encodeJwt(payload: dict) -> str:
     if key == None:
         raise Exception('Key collection seems to be empty!')
 
-    keyBytes = key.privateKey.encode('ascii')
+    keyBytes = key.privateKey
 
     keyDecoded = jwk.JWK.from_pem(base64.b64decode(keyBytes))
 

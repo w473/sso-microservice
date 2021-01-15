@@ -12,15 +12,16 @@ def findUser(email: str, params: dict) -> User:
 
     token = encodeJwt(payload)
 
-    url = current_app.config['USERS_SERVICE_URL'] + '/fetchByEmail/' + email
+    url = '/findByEmail/'
 
-    payload = {}
+    payload = {'email': email}
     if 'password' in params:
         payload['password'] = params['password']
-        url += "/1"
+        url = '/findByEmailPassword/'
     elif len(params) != 0:
         raise Exception('Not implemented')
 
+    url = current_app.config['USERS_SERVICE_URL'] + url
     headers = {'Authorization': 'Bearer ' + token}
 
     r = getRequest().post(url, payload, headers)
@@ -31,4 +32,4 @@ def findUser(email: str, params: dict) -> User:
     if r.status_code != 200:
         raise Exception(response['message'])
 
-    return User(response.get('payload'))
+    return User(response.get('data'))
