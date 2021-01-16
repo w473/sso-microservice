@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from flaskr.services.RequestService import JSONSchemaValidatorFailException
 from flaskr.domain import db
+from flaskr.services.AppsAuthorizationService import parseConfig
 import jsonschema
 import logging
 import sys
@@ -23,6 +24,11 @@ def create_app(config=None) -> Flask:
     app.config['DB_USERNAME'] = config.get('DB_USERNAME')
     app.config['DB_PASSWORD'] = config.get('DB_PASSWORD')
     app.config['DB_NAME'] = config.get('DB_NAME')
+    app.config['APPS_CREDENTIALS'] = parseConfig(
+        config.get('APPS_CREDENTIALS')
+    )
+    app.config['VALIDATION_SCHEMAS_PATH'] = "flaskr/resources/validation_schemas"
+    app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
     # ensure the instance folder exists
     try:
@@ -44,8 +50,7 @@ def create_app(config=None) -> Flask:
 
     @app.errorhandler(JSONSchemaValidatorFailException)
     def onValidationError(e):
-        logger.info(e)
-        return {'data': e.errors}, 400
+        return {'message': 'Validation failed', 'data': e.errors}, 400
 
     @app.errorhandler(Exception)
     def onException(e):
@@ -56,7 +61,7 @@ def create_app(config=None) -> Flask:
 
         logger.error(print(repr(traceback.format_exception(exc_type, exc_value,
                                                            exc_traceback))))
-        return {'data': 'Unexpected error occured'}, 500
+        return {'message': 'Unexpected error occured'}, 500
 
     @app.teardown_appcontext
     def closeDb(error):

@@ -11,6 +11,16 @@ import time
 from jwcrypto import jwt, jwk
 
 
+def getSysJwt(username: str) -> str:
+    payload = {
+        'username': username,
+        'email': 'system',
+        'roles': ['SYS', 'ADMIN']
+    }
+
+    return encodeJwt(payload)
+
+
 def encodeJwt(payload: dict) -> str:
     payload['exp'] = (time.time() + 60*3)
     repo = KeyRepository(getDb())

@@ -1,16 +1,10 @@
 from flaskr.domain.documents.User import User
-from flaskr.services.JwtService import encodeJwt
+from flaskr.services.JwtService import encodeJwt, getSysJwt
 from flaskr.services.RequestService import getRequest
 from flask import current_app
 
 
 def findUser(email: str, params: dict) -> User:
-    payload = {
-        'username': 'sso',
-        'roles': ['SYSTEM', 'ADMIN']
-    }
-
-    token = encodeJwt(payload)
 
     url = '/findByEmail/'
 
@@ -22,7 +16,7 @@ def findUser(email: str, params: dict) -> User:
         raise Exception('Not implemented')
 
     url = current_app.config['USERS_SERVICE_URL'] + url
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': 'Bearer ' + getSysJwt('sso')}
 
     r = getRequest().post(url, payload, headers)
 

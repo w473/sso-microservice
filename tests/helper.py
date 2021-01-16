@@ -1,5 +1,6 @@
 from flask import Flask
 from flaskr.services.RequestService import Request
+import json
 
 
 class NewRequestObject(Request):
@@ -9,7 +10,7 @@ class NewRequestObject(Request):
         self.code = code
 
     def post(self, url, jsonPayload, headers):
-        return Response(self.code, {"message": self.message, "payload": self.payload})
+        return Response(self.code, {"message": self.message, "data": self.payload})
 
 
 class Response():
@@ -39,3 +40,9 @@ def setUserNotActive(app: Flask) -> None:
 def setUserNotFound(app: Flask) -> None:
     app.services['request'] = NewRequestObject(
         'aaaa', {}, 403)
+
+
+def jsonCompareDict(jsonBytes, dictToCompare):
+    jsonDict = json.loads(jsonBytes)
+    for key, value in dictToCompare.items():
+        assert jsonDict.get(key) == value

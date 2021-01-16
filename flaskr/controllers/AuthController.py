@@ -1,14 +1,34 @@
 from flask import Blueprint, abort, request, current_app
 from passlib.hash import sha256_crypt
 from flaskr.domain.db import getDb
-from flaskr.services.JwtService import encodeJwt
+from flaskr.services.JwtService import encodeJwt, getSysJwt
 from flaskr.services.AuthService import is_logged, parseToken
+from flaskr.services.AppsAuthorizationService import isAppCredentialValid
 from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenRepository
 from flaskr.domain.documents.RefreshToken import RefreshToken
-from flaskr.services import UserService
+from flaskr.services import UserService, RequestService
 import uuid
 
 controller = Blueprint('auth', __name__, url_prefix='/auth')
+
+
+@controller.route("/sysLogin", methods=['POST'])
+@RequestService.validate(kind='syslogin')
+def sysLogin():
+    content = request.get_json(silent=True)
+    if content == None:
+        return {'message': 'Invalid request - no json'}, 400
+
+    key = content.get('key')
+    app = content.get('app')
+
+    if key == None or app == None:
+        return {'message': 'Invalid request'}, 400
+
+    if isAppCredentialValid(app, key):
+        return getSysJwt(app), 200
+
+    return {"message": "Not allowed"}, 403
 
 
 @controller.route("/login", methods=['POST'])

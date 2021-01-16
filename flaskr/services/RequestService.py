@@ -14,7 +14,6 @@ def get_schema(kind, operation='default'):
     try:
         path = current_app.config['VALIDATION_SCHEMAS_PATH']
         path = os.path.join(path, '{0}.json'.format(kind))
-        logger.info('Reading schema from {0}'.format(path))
         with open(path) as file:
             return json.load(file)
     except:

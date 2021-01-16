@@ -25,7 +25,8 @@ def app():
         'DB_PASSWORD': "password",
         'DB_NAME': "test_sso",
         'USERS_SERVICE_URL': "potatoURL",
-        'MAILING_SERVER': ""
+        'MAILING_SERVER': "",
+        'APPS_CREDENTIALS': '{"mailer":"JDJ5JDEyJFg1ZEdPMHRab2NKQ1JDemZiUWJDQXVFRzNTbTNYdkRSNHdkY2hlMTh6RFVKdEt6d1JmVC4y", "users":"JDJ5JDEyJHRBamltalJFa1p1aksweS80R1pPcE94Rjg1ZkZFUlROV0phN05pTFF0RUJpSDYvTnFMMWth"}'
     }
 
     app = create_app(testConfig)
@@ -76,7 +77,7 @@ def authHeader(app: Flask, client) -> dict:
         "/auth/login", json={"email": 'testuser', "password": 'pass'}
     )
     token = response.get_data(as_text=True)
-
+    print(token)
     return {"Authorization": "Bearer " + token}
 
 
@@ -87,5 +88,5 @@ def authHeaderAdmin(app: Flask, client) -> dict:
         "/auth/login", json={"email": 'testuseradmin', "password": 'pass'}
     )
     token = response.get_data(as_text=True)
-
+    print(token)
     return {"Authorization": "Bearer " + token}

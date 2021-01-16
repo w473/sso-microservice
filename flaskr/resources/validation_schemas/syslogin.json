@@ -1,0 +1,20 @@
+{
+    "type": "object",
+    "required": [
+        "app",
+        "key"
+    ],
+    "properties": {
+        "app": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 20
+        },
+        "key": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 300
+        }
+    },
+    "additionalProperties": false
+}
