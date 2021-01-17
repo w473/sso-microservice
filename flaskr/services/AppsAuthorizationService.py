@@ -5,6 +5,9 @@ import bcrypt
 
 
 def parseConfig(config: str) -> dict:
+    if len(config) == 0:
+        raise Exception('APPS_CREDENTIALS is empty')
+
     config = json.loads(config)
     ret = dict()
     for key, val in config.items():

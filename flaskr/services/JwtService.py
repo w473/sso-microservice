@@ -1,14 +1,12 @@
 import base64
-from ..domain.db import getDb
-from ..domain.repositories.KeyRepository import KeyRepository
-from datetime import timedelta, datetime
-from flask import current_app
-from Crypto.PublicKey import RSA
-from flask import g, current_app, Request
-import base64
 import json
 import time
 from jwcrypto import jwt, jwk
+from flask import g, current_app, Request
+from datetime import timedelta, datetime
+
+from flaskr.domain.db import getDb
+from flaskr.domain.repositories.KeyRepository import KeyRepository
 
 
 def getSysJwt(username: str) -> str:

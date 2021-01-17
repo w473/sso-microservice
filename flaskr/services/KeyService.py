@@ -1,5 +1,4 @@
-from Crypto.Cipher import PKCS1_OAEP
-from Crypto.PublicKey import RSA
+from jwcrypto import jwk
 from ..domain.documents.Key import Key as KeyDocument
 from ..domain.repositories.KeyRepository import KeyRepository
 from ..domain.db import getDb
@@ -9,10 +8,11 @@ import base64
 class KeyService:
     def generate(self):
         keyBytes = 512
-        key = RSA.generate(keyBytes*8)
+        key = jwk.JWK.generate(kty='RSA', size=keyBytes*8)
+
         return KeyDocument(
-            base64.b64encode(key.publickey().exportKey('PEM')),
-            base64.b64encode(key.exportKey('PEM')),
+            base64.b64encode(key.export_to_pem(False, None)),
+            base64.b64encode(key.export_to_pem(True, None)),
             'RS'+str(keyBytes)
         )
 

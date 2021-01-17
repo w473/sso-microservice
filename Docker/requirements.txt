@@ -1,12 +1,12 @@
+python-dotenv
 flask
 PyMySQL
 PyMySQL[rsa]
-pycrypto
-pycryptodome
+bcrypt
 pyjwt
 pyjwt[crypto]
 jsonschema
 jsonschema[format]
-pytest
 requests
 jwcrypto
+passlib
