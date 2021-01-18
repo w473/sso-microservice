@@ -1,3 +1,4 @@
+import uuid
 from flask import Blueprint, abort, request, current_app
 from passlib.hash import sha256_crypt
 from flaskr.domain.db import getDb
@@ -7,7 +8,6 @@ from flaskr.services.AppsAuthorizationService import isAppCredentialValid
 from flaskr.domain.repositories.RefreshTokenRepository import RefreshTokenRepository
 from flaskr.domain.documents.RefreshToken import RefreshToken
 from flaskr.services import UserService, RequestService
-import uuid
 
 controller = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -48,10 +48,13 @@ def login():
     if user == None:
         return {'message': 'Login failed'}, 403
 
+    current_app.logger.info(user)
+
     if user.isActive == False:
         return {'message': 'Please activate your account'}, 403
 
     refreshToken = RefreshToken(user.id, str(uuid.uuid4()))
+
     (RefreshTokenRepository(getDb())).save(refreshToken)
 
     payload = user.toDict()

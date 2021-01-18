@@ -46,6 +46,6 @@ def initDb() -> None:
     _executeSqlFile('db_init')
 
 
-def closeDb(error=None):
+def closeDb():
     if hasattr(g, 'db') and g.db.open:
         g.db.close()

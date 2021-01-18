@@ -47,7 +47,7 @@ def validateDict(dict: dict, kind: str, operation: str = 'default'):
 
 class Request ():
     def post(self, url, jsonPayload, headers):
-        return requests.post(url, json=jsonPayload, headers=headers)
+        return requests.post(url, json=jsonPayload, headers=headers, timeout=10)
 
 
 def getRequest() -> Request:

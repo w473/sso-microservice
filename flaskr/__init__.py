@@ -3,13 +3,11 @@ from flask import Flask
 from flaskr.services.RequestService import JSONSchemaValidatorFailException
 from flaskr.domain import db
 from flaskr.services.AppsAuthorizationService import parseConfig
+from flaskr.services.LoggerService import initLogger
 import jsonschema
-import logging
 import sys
 import traceback
 from dotenv import load_dotenv
-
-logger = logging.getLogger(__name__)
 
 
 def create_app(config=None) -> Flask:
@@ -23,12 +21,17 @@ def create_app(config=None) -> Flask:
     app.config['DB_HOSTNAME'] = config.get('DB_HOSTNAME')
     app.config['DB_USERNAME'] = config.get('DB_USERNAME')
     app.config['DB_PASSWORD'] = config.get('DB_PASSWORD')
+
+    app.config['GRAYLOG_HOST'] = config.get('GRAYLOG_HOST')
+    app.config['GRAYLOG_FACILITY'] = 'sso'
+
     app.config['DB_NAME'] = config.get('DB_NAME')
     app.config['APPS_CREDENTIALS'] = parseConfig(
         config.get('APPS_CREDENTIALS')
     )
     app.config['VALIDATION_SCHEMAS_PATH'] = "flaskr/resources/validation_schemas"
     app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+    initLogger(app)
 
     # ensure the instance folder exists
     try:
@@ -58,13 +61,13 @@ def create_app(config=None) -> Flask:
 
         traceback.print_exception(exc_type, exc_value, exc_traceback,
                                   limit=2, file=sys.stdout)
-
-        logger.error(print(repr(traceback.format_exception(exc_type, exc_value,
-                                                           exc_traceback))))
+        app.log_exception(e)
         return {'message': 'Unexpected error occured'}, 500
 
     @app.teardown_appcontext
     def closeDb(error):
-        db.closeDb(error)
+        if error:
+            app.logger.error(error)
+        db.closeDb()
 
     return app
