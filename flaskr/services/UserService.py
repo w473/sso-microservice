@@ -27,4 +27,4 @@ def findUser(email: str, params: dict) -> User:
     if r.status_code != 200:
         raise Exception(response['message'])
 
-    return User(response.get('data'))
+    return User(response)
