@@ -15,6 +15,38 @@ controller = Blueprint('auth', __name__, url_prefix='/auth')
 @controller.route("/sysLogin", methods=['POST'])
 @RequestService.validate(kind='syslogin')
 def sysLogin():
+    """Endpoint for getting JWT token by other services
+    ---
+    requestBody:
+        required: true
+        content:
+            application/json:
+                schema:
+                    properties:
+                        app:
+                            type: string
+                        key:
+                            type: string
+    responses:
+        200:
+            description: JWT Token
+            content:
+                text/plain:
+                    schema:
+                        type: string
+        400:
+            description: Invalid Request
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/definitions/Message'
+        403:
+            description: Not allowed
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/definitions/Message'
+    """
     content = request.get_json(silent=True)
     if content == None:
         return {'message': 'Invalid request - no json'}, 400
@@ -32,7 +64,46 @@ def sysLogin():
 
 
 @controller.route("/login", methods=['POST'])
+@RequestService.validate(kind='login')
 def login():
+    """Endpoint for getting JWT token by users
+    ---
+    requestBody:
+        required: true
+        content:
+            application/json:
+                schema:
+                    properties:
+                        app:
+                            type: string
+                        key:
+                            type: string
+    definitions:
+      Message:
+        type: object
+        properties:
+          message:
+            type: string
+    responses:
+        200:
+            description: JWT Token
+            content:
+                text/plain:
+                    schema:
+                        type: string
+        400:
+            description: Invalid Request
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/definitions/Message'
+        403:
+            description: Not allowed
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/definitions/Message'
+    """
     content = request.get_json(silent=True)
     if content == None:
         return {'message': 'Invalid request - no json'}, 400
@@ -72,6 +143,22 @@ def logout():
 
 @controller.route("/tokenRefresh", methods=['GET'])
 def refreshToken():
+    """Endpoint for getting refreshed JWT token by users
+    ---
+    responses:
+        200:
+            description: JWT Token
+            content:
+                text/plain:
+                    schema:
+                        type: string
+        403:
+            description: Not allowed
+            content:
+                application/json:
+                    schema:
+                        $ref: '#/definitions/Message'
+    """
     try:
         token = parseToken(True)
         refreshToken = token.get('refreshToken')

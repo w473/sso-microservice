@@ -7,7 +7,9 @@ from flaskr.services.LoggerService import initLogger
 import jsonschema
 import sys
 import traceback
+from werkzeug.exceptions import HTTPException
 from dotenv import load_dotenv
+from flasgger import Swagger
 
 
 def create_app(config=None) -> Flask:
@@ -51,20 +53,34 @@ def create_app(config=None) -> Flask:
     from flaskr.commands import InitCommand
     app.register_blueprint(InitCommand.command)
 
-    @app.errorhandler(JSONSchemaValidatorFailException)
+    swagger = Swagger(app, config={
+        'headers': [],
+        'specs': [
+            {
+                "endpoint": 'apispec_1',
+                "route": '/apispec_1.json',
+                "rule_filter": lambda rule: True,  # all in
+                "model_filter": lambda tag: True,  # all in
+            }
+        ],
+        "swagger_ui": True,
+        "static_url_path": "/flasgger_static",
+        "specs_route": "/api-docs/",
+        'openapi': '3.0.1'
+    })
+
+    @ app.errorhandler(JSONSchemaValidatorFailException)
     def onValidationError(e):
         return {'message': 'Validation failed', 'data': e.errors}, 400
 
-    @app.errorhandler(Exception)
+    @ app.errorhandler(Exception)
     def onException(e):
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-
-        traceback.print_exception(exc_type, exc_value, exc_traceback,
-                                  limit=2, file=sys.stdout)
+        if issubclass(e.__class__, HTTPException):
+            return e.get_response()
         app.log_exception(e)
         return {'message': 'Unexpected error occured'}, 500
 
-    @app.teardown_appcontext
+    @ app.teardown_appcontext
     def closeDb(error):
         if error:
             app.logger.error(error)
