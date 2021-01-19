@@ -9,7 +9,7 @@ import sys
 import traceback
 from werkzeug.exceptions import HTTPException
 from dotenv import load_dotenv
-from flasgger import Swagger
+from flaskr.services.OpenapiService import openAPI
 
 
 def create_app(config=None) -> Flask:
@@ -53,21 +53,7 @@ def create_app(config=None) -> Flask:
     from flaskr.commands import InitCommand
     app.register_blueprint(InitCommand.command)
 
-    swagger = Swagger(app, config={
-        'headers': [],
-        'specs': [
-            {
-                "endpoint": 'apispec_1',
-                "route": '/apispec_1.json',
-                "rule_filter": lambda rule: True,  # all in
-                "model_filter": lambda tag: True,  # all in
-            }
-        ],
-        "swagger_ui": True,
-        "static_url_path": "/flasgger_static",
-        "specs_route": "/api-docs/",
-        'openapi': '3.0.1'
-    })
+    openAPI(app)
 
     @ app.errorhandler(JSONSchemaValidatorFailException)
     def onValidationError(e):
