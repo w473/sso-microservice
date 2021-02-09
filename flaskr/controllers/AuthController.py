@@ -74,9 +74,9 @@ def login():
             application/json:
                 schema:
                     properties:
-                        app:
+                        email:
                             type: string
-                        key:
+                        password:
                             type: string
     definitions:
       Message:

@@ -1,8 +1,8 @@
 {
     "type": "object",
     "required": [
-        "app",
-        "key"
+        "email",
+        "password"
     ],
     "properties": {
         "email": {

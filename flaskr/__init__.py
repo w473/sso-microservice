@@ -1,5 +1,7 @@
 import os
 from flask import Flask
+from flask_cors import CORS
+
 from flaskr.services.RequestService import JSONSchemaValidatorFailException
 from flaskr.domain import db
 from flaskr.services.AppsAuthorizationService import parseConfig
@@ -53,6 +55,7 @@ def create_app(config=None) -> Flask:
     from flaskr.commands import InitCommand
     app.register_blueprint(InitCommand.command)
 
+    CORS(app)
     openAPI(app)
 
     @ app.errorhandler(JSONSchemaValidatorFailException)

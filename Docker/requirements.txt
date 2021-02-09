@@ -12,3 +12,4 @@ jwcrypto
 passlib
 git+git://github.com/lobocode/flask-graylog
 flasgger
+flask-cors

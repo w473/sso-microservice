@@ -10,6 +10,7 @@ setup(
         'flask', 'PyMySQL', 'PyMySQL[rsa]', 'bcrypt',
         'jsonschema', 'jsonschema[format]', 'pytest',
         'requests', 'jwcrypto', 'passlib', 'python-dotenv',
-        'git+git://github.com/lobocode/flask-graylog', 'flasgger'
+        'git+git://github.com/lobocode/flask-graylog', 'flasgger',
+        'flask-cors'
     ],
 )
