@@ -1,0 +1,2 @@
+FROM sso-py:latest
+COPY flaskr ./flaskr

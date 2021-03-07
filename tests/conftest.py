@@ -25,7 +25,6 @@ def app():
         'DB_PASSWORD': "password",
         'DB_NAME': "test_sso",
         'USERS_SERVICE_URL': "potatoURL",
-        'MAILING_SERVER': "",
         'APPS_CREDENTIALS': '{"mailer":"JDJ5JDEyJFg1ZEdPMHRab2NKQ1JDemZiUWJDQXVFRzNTbTNYdkRSNHdkY2hlMTh6RFVKdEt6d1JmVC4y", "users":"JDJ5JDEyJHRBamltalJFa1p1aksweS80R1pPcE94Rjg1ZkZFUlROV0phN05pTFF0RUJpSDYvTnFMMWth"}'
     }
 
